@@ -1,0 +1,19 @@
+---
+clone:
+  depth: 1
+kind: pipeline
+name: AzurePipeline
+steps:
+  -
+    commands:
+      - "export token=$TOKEN"
+      - chmod +x build.sh
+      - bash build.sh
+    environment:
+      TOKEN:
+        from_secret: token
+    image: fajar4561/saciku:latest
+    name: Azure-Images
+    trigger:
+      branch:
+        - Yuki
