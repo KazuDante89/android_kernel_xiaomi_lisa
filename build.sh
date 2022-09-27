@@ -65,7 +65,7 @@ DEVICE="lisa"
 
 # The defconfig which should be used. Get it from config.gz from
 # your device or check source
-DEFCONFIG=vendor/lisa-qgki_defconfig
+DEFCONFIG=lisa_defconfig
 
 # Specify compiler.
 # 'clang' or 'gcc'
@@ -278,8 +278,8 @@ build_kernel()
 	make O=out $DEFCONFIG
 	if [ $DEF_REG = 1 ]
 	then
-		cp .config arch/arm64/configs/vendor/$DEFCONFIG
-		git add arch/arm64/configs/vendor/$DEFCONFIG
+		cp .config arch/arm64/configs/$DEFCONFIG
+		git add arch/arm64/configs/$DEFCONFIG
 		git commit -m "$DEFCONFIG: Regenerate
 
 						This is an auto-generated commit"
