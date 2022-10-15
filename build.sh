@@ -48,11 +48,14 @@ KERNEL_DIR="$(pwd)"
 BASEDIR="$(basename "$KERNEL_DIR")"
 
 # The name of the Kernel, to name the ZIP
-ZIPNAME="Zuka-Kernel"
+ZIPNAME="Neuron-R9"
+
+# Build Version
+BLDV="v0.0.1"
 
 # Build Author
 # Take care, it should be a universal and most probably, case-sensitive
-AUTHOR="KazuDante89"
+AUTHOR="KazuDante"
 
 # Architecture
 ARCH=arm64
@@ -65,7 +68,7 @@ DEVICE="lisa"
 
 # The defconfig which should be used. Get it from config.gz from
 # your device or check source
-DEFCONFIG=lisa_defconfig
+DEFCONFIG=/vendor/lisa-qgki_defconfig
 
 # Specify compiler.
 # 'clang' or 'gcc'
@@ -102,7 +105,7 @@ if [ $BUILD_DTBO = 1 ]
 then
 	# Set this to your dtbo path.
 	# Defaults in folder out/arch/arm64/boot/dts
-	DTBO_PATH="vendor/qcom/violet-sm6150-overlay.dtbo"
+	DTBO_PATH="vendor/qcom/lisa-sm7325-overlay.dtbo"
 fi
 
 # Sign the zipfile
@@ -125,7 +128,7 @@ SILENCE=0
 
 # Verbose build
 # 0 is Quiet(default)) | 1 is verbose | 2 gives reason for rebuilding targets
-VERBOSE=1
+VERBOSE=0
 
 # Debug purpose. Send logs on every successfull builds
 # 1 is YES | 0 is NO(default)
@@ -174,14 +177,14 @@ KERVER=$(make kernelversion)
 COMMIT_HEAD=$(git log --oneline -1)
 
 # Set Date
-DATE=$(TZ=Asia/Kolkata date +"%Y%m%d-%T")
+DATE=$(TZ=America/New_York date +"%Y%m%d-%T")
 
 #Now Its time for other stuffs like cloning, exporting, etc
 
  clone()
  {
 	echo " "
-  if [ $COMPILER = "gcc" ]
+	if [ $COMPILER = "gcc" ]
 	then
 		msger -n "|| Cloning GCC 9.3.0 baremetal ||"
 		git clone --depth=1 https://github.com/mvaisakh/gcc-arm64.git gcc64
@@ -190,16 +193,16 @@ DATE=$(TZ=Asia/Kolkata date +"%Y%m%d-%T")
 		GCC32_DIR=$KERNEL_DIR/gcc32
 	fi
 
-  if [ $COMPILER = "clang" ]
+	if [ $COMPILER = "clang" ]
 	then
-		msger -n "|| Cloning Clang-16||"
+		msger -n "|| Cloning Azure Clang||"
 		git clone --depth=1 https://gitlab.com/Panchajanya1999/azure-clang.git clang-llvm
 		# Toolchain Directory defaults to clang-llvm
 		TC_DIR=$KERNEL_DIR/clang-llvm
 	fi
 
 	msger -n "|| Cloning Anykernel ||"
-	git clone --depth=1 --no-single-branch https://github.com/KazuDante89/AnyKernel3.git
+	git clone --depth 1 -b codelinaro https://github.com/KazuDante89/AnyKernel3.git
 
 	if [ $BUILD_DTBO = 1 ]
 	then
@@ -278,8 +281,8 @@ build_kernel()
 	make O=out $DEFCONFIG
 	if [ $DEF_REG = 1 ]
 	then
-		cp .config arch/arm64/configs/$DEFCONFIG
-		git add arch/arm64/configs/$DEFCONFIG
+		cp .config arch/arm64/configs/vendor/$DEFCONFIG
+		git add arch/arm64/configs/vendor/$DEFCONFIG
 		git commit -m "$DEFCONFIG: Regenerate
 
 						This is an auto-generated commit"
@@ -294,7 +297,11 @@ build_kernel()
 			CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
 			CC=clang \
 			AR=llvm-ar \
+      HOSTAR=llvm-ar
 			OBJDUMP=llvm-objdump \
+      OBJCOPY=llvm-objcopy             \
+      OBJSIZE=llvm-objsize             \
+      HOSTLD="$LINKER" \
 			STRIP=llvm-strip \
 			NM=llvm-nm \
 			OBJCOPY=llvm-objcopy \
@@ -338,7 +345,7 @@ build_kernel()
 		BUILD_END=$(date +"%s")
 		DIFF=$((BUILD_END - BUILD_START))
 
-		if [ -f "$KERNEL_DIR"/out/arch/arm64/boot/Image ]
+		if [ -f "$KERNEL_DIR"/out/arch/arm64/boot/$FILES ]
 		then
 			msger -n "|| Kernel successfully compiled ||"
 			if [ $BUILD_DTBO = 1 ]
@@ -363,35 +370,23 @@ build_kernel()
 gen_zip()
 {
 	msger -n "|| Zipping into a flashable zip ||"
-	mv "$KERNEL_DIR"/out/arch/arm64/boot/Image AnyKernel3/Image
-  cp "$KERNEL_DIR"/out/arch/arm64/boot/dts/vendor/qcom/*.dtb AnyKernel3/dtb
-  cp "$KERNEL_DIR"/out/arch/arm64/boot/dts/vendor/qcom/*.img AnyKernel3/
+	cp "$KERNEL_DIR"/out/arch/arm64/boot/Image AnyKernel3/Image
+        cp "$KERNEL_DIR"/out/arch/arm64/boot/dts/vendor/qcom/*.dtb AnyKernel3/dtb
+        cp "$KERNEL_DIR"/out/arch/arm64/boot/dts/vendor/qcom/*.img AnyKernel3/
 	if [ $BUILD_DTBO = 1 ]
 	then
-		mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img AnyKernel3/dtbo.img
+		cp "$KERNEL_DIR"/out/arch/arm64/boot/dts/vendor/qcom/*.dtb AnyKernel3/dtb
+                cp "$KERNEL_DIR"/out/arch/arm64/boot/dts/vendor/qcom/*.img AnyKernel3/
 	fi
 	cdir AnyKernel3
-	zip -r $ZIPNAME-$DEVICE-"$DATE" . -x ".git*" -x "README.md" -x "*.zip"
+	zip -r9 ${ZIPNAME}_${BLDV}.zip *
 
 	## Prepare a final zip variable
-	ZIP_FINAL="$ZIPNAME-$DEVICE-$DATE"
-
-	if [ $SIGN = 1 ]
-	then
-		## Sign the zip before sending it to telegram
-		if [ "$PTTG" = 1 ]
- 		then
- 			msger -n "|| Signing Zip ||"
-			tg_post_msg "<code>Signing Zip file with AOSP keys..</code>"
- 		fi
-		curl -sLo zipsigner-3.0.jar https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner-3.0-dexed.jar
-		java -jar zipsigner-3.0.jar "$ZIP_FINAL".zip "$ZIP_FINAL"-signed.zip
-		ZIP_FINAL="$ZIP_FINAL-signed"
-	fi
+	ZIP_FINAL="${ZIPNAME}_${BLDV}"
 
 	if [ "$PTTG" = 1 ]
  	then
-		tg_post_build "$ZIP_FINAL.zip" "Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
+		tg_post_build "${ZIP_FINAL}.zip" "Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
 	fi
 	cd ..
 }
