@@ -100,7 +100,7 @@ FILES="Image"
 
 # Build dtbo.img (select this only if your source has support to building dtbo.img)
 # 1 is YES | 0 is NO(default)
-BUILD_DTBO=0
+BUILD_DTBO=1
 if [ $BUILD_DTBO = 1 ]
 then
 	# Set this to your dtbo path.
@@ -372,11 +372,9 @@ gen_zip()
 	msger -n "|| Zipping into a flashable zip ||"
 	cp "$KERNEL_DIR"/out/arch/arm64/boot/Image AnyKernel3/Image
         cp "$KERNEL_DIR"/out/arch/arm64/boot/dts/vendor/qcom/*.dtb AnyKernel3/dtb
-        cp "$KERNEL_DIR"/out/arch/arm64/boot/dts/vendor/qcom/*.img AnyKernel3/
 	if [ $BUILD_DTBO = 1 ]
 	then
-		cp "$KERNEL_DIR"/out/arch/arm64/boot/dts/vendor/qcom/*.dtb AnyKernel3/dtb
-                cp "$KERNEL_DIR"/out/arch/arm64/boot/dts/vendor/qcom/*.img AnyKernel3/
+		cp "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img AnyKernel3/dtbo.img
 	fi
 	cdir AnyKernel3
 	zip -r9 ${ZIPNAME}_${BLDV}.zip *
