@@ -48,10 +48,10 @@ KERNEL_DIR="$(pwd)"
 BASEDIR="$(basename "$KERNEL_DIR")"
 
 # The name of the Kernel, to name the ZIP
-ZIPNAME="Neuron-R9"
+ZIPNAME="Yuki-Test"
 
 # Build Version
-BLDV="v0.0.1"
+BLDV="v0.0.0"
 
 # Build Author
 # Take care, it should be a universal and most probably, case-sensitive
@@ -202,7 +202,7 @@ DATE=$(TZ=America/New_York date +"%Y%m%d-%T")
 	fi
 
 	msger -n "|| Cloning Anykernel ||"
-	git clone --depth 1 -b codelinaro https://github.com/KazuDante89/AnyKernel3.git
+	git clone --depth 1 https://github.com/KazuDante89/AnyKernel3_LISA.git AnyKernel3
 
 	if [ $BUILD_DTBO = 1 ]
 	then
